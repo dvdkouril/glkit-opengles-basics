@@ -7,13 +7,14 @@
 //
 
 import GLKit
+import Foundation
 
 struct Vertex {
     var Position: (CFloat, CFloat, CFloat)
     var Color: (CFloat, CFloat, CFloat, CFloat)
 }
 
-var Vertices = [
+/*var Vertices = [
     Vertex(Position: (1, -1, 0) , Color: (1, 0, 0, 1)),
     Vertex(Position: (1, 1, 0)  , Color: (0, 1, 0, 1)),
     Vertex(Position: (-1, 1, 0) , Color: (0, 0, 1, 1)),
@@ -23,7 +24,39 @@ var Vertices = [
 var Indices: [GLubyte] = [
     0, 1, 2,
     2, 3, 0
+]*/
+var Vertices = [
+    Vertex(Position: (1, -1, 0), Color: (1, 0, 0, 1)),
+    Vertex(Position: (1, 1, 0), Color: (1, 0, 0, 1)),
+    Vertex(Position: (-1, 1, 0), Color: (0, 1, 0, 1)),
+    Vertex(Position: (-1, -1, 0), Color: (0, 1, 0, 1)),
+    Vertex(Position: (1, -1, -1), Color: (1, 0, 0, 1)),
+    Vertex(Position: (1, 1, -1), Color: (1, 0, 0, 1)),
+    Vertex(Position: (-1, 1, -1), Color: (0, 1, 0, 1)),
+    Vertex(Position: (-1, -1, -1), Color: (0, 1, 0, 1))
 ]
+
+var Indices: [GLubyte] = [
+    // Front
+    0, 1, 2,
+    2, 3, 0,
+    // Back
+    4, 6, 5,
+    4, 7, 6,
+    // Left
+    2, 7, 3,
+    7, 6, 2,
+    // Right
+    0, 4, 1,
+    4, 1, 5,
+    // Top
+    6, 2, 1,
+    1, 6, 5,
+    // Bottom
+    0, 3, 7,
+    0, 7, 4
+]
+
 
 class OpenGLView: GLKView {
     
@@ -45,6 +78,7 @@ class OpenGLView: GLKView {
         
         var api : EAGLRenderingAPI = EAGLRenderingAPI.OpenGLES2
         self.context = EAGLContext(API: api)
+        self.drawableDepthFormat = GLKViewDrawableDepthFormat.Format24
         
         if self.context == nil {
             println("Couldn't initialize OpenGL ES context")
@@ -65,6 +99,7 @@ class OpenGLView: GLKView {
     override func drawRect(rect: CGRect) {
         time += 0.1
         glClearColor(0.1, 0.1, 0.1, 1.0)
+        glClearDepthf(1.0)
         glClear(GLenum(GL_COLOR_BUFFER_BIT) | GLenum(GL_DEPTH_BUFFER_BIT))
         
         //println("\(time)")
@@ -82,6 +117,31 @@ class OpenGLView: GLKView {
     func updateUniforms() {
         let timeUniform = glGetUniformLocation(program, "u_time")
         glUniform1f(timeUniform, self.time)
+        
+        var projectionMatrix = GLKMatrix4MakePerspective(45, Float(self.frame.width / self.frame.height), 1, 1000)
+        
+        let projectionUniform = glGetUniformLocation(program, "Projection")
+        let myMatrix: Array<GLfloat> = [
+            projectionMatrix.m00, projectionMatrix.m01, projectionMatrix.m02, projectionMatrix.m03,
+            projectionMatrix.m10, projectionMatrix.m11, projectionMatrix.m12, projectionMatrix.m13,
+            projectionMatrix.m20, projectionMatrix.m21, projectionMatrix.m22, projectionMatrix.m23,
+            projectionMatrix.m30, projectionMatrix.m31, projectionMatrix.m32, projectionMatrix.m33, ]
+        
+        glUniformMatrix4fv(projectionUniform, GLsizei(1), GLboolean(0), myMatrix)
+        
+        var modelViewMatrix = GLKMatrix4MakeTranslation(0/*sin(time)*/, 0, -7)
+        modelViewMatrix = GLKMatrix4Rotate(modelViewMatrix, time, 0, 0, 1)
+        modelViewMatrix = GLKMatrix4Rotate(modelViewMatrix, time, 1, 0, 0)
+        
+        let modelViewUniform = glGetUniformLocation(program, "ModelView")
+        let myModelViewMatrix: Array<GLfloat> = [
+            modelViewMatrix.m00, modelViewMatrix.m01, modelViewMatrix.m02, modelViewMatrix.m03,
+            modelViewMatrix.m10, modelViewMatrix.m11, modelViewMatrix.m12, modelViewMatrix.m13,
+            modelViewMatrix.m20, modelViewMatrix.m21, modelViewMatrix.m22, modelViewMatrix.m23,
+            modelViewMatrix.m30, modelViewMatrix.m31, modelViewMatrix.m32, modelViewMatrix.m33, ]
+        
+        glUniformMatrix4fv(modelViewUniform, GLsizei(1), GLboolean(0), myModelViewMatrix)
+        
     }
     
     func compileShader(shaderName: String?, shaderType: GLenum) -> GLuint {

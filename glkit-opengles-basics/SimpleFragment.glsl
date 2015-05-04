@@ -4,5 +4,5 @@ uniform lowp float u_time;
 //uniform lowp float u_resolution;
 
 void main(void) {
-    gl_FragColor = vec4(sin(DestinationColor.x+u_time), sin(DestinationColor.y+u_time), sin(DestinationColor.z+u_time), DestinationColor.a);
+    gl_FragColor = vec4(DestinationColor.x, DestinationColor.y, DestinationColor.z, DestinationColor.a);
 }
